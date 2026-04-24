@@ -8,5 +8,6 @@ add_executable(CC_SLR_LR_1_Parser
         src/grammar.cpp
         src/items.cpp
         src/parsing_table.cpp
+        src/lr1_parser.cpp
         src/slr_parser.cpp
         src/tree.cpp)

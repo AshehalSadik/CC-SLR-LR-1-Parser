@@ -60,6 +60,9 @@ public:
 	const std::vector<ProductionRule> &getProductionRules() const { return productionRules_; }
 	const std::vector<Conflict> &getConflicts() const { return conflicts_; }
 	bool isSLR1() const { return conflicts_.empty(); }
+	std::size_t actionEntryCount() const;
+	std::size_t gotoEntryCount() const;
+	std::size_t estimatedTableBytes() const;
 
 private:
 	const Grammar &grammar_;

@@ -183,6 +183,19 @@ std::optional<int> SLRParsingTable::getGoto(const int stateId, const Grammar::Sy
 	return it->second;
 }
 
+std::size_t SLRParsingTable::actionEntryCount() const {
+	return actionTable_.size();
+}
+
+std::size_t SLRParsingTable::gotoEntryCount() const {
+	return gotoTable_.size();
+}
+
+std::size_t SLRParsingTable::estimatedTableBytes() const {
+	return actionTable_.size() * sizeof(std::pair<const std::pair<int, Grammar::Symbol>, ActionEntry>) +
+		gotoTable_.size() * sizeof(std::pair<const std::pair<int, Grammar::Symbol>, int>);
+}
+
 void SLRParsingTable::collectProductionRules() {
 	int index = 0;
 	for (const auto &[lhs, rhsList] : grammar_.getProductions()) {

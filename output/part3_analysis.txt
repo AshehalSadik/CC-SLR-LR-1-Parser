@@ -1,0 +1,116 @@
+Part 3: Parser Comparison and Analysis
+Date: 2026-04-24
+
+Commands used:
+1) ./cmake-build-debug/CC_SLR_LR_1_Parser input/grammar.txt "id + id * id"
+2) ./cmake-build-debug/CC_SLR_LR_1_Parser input/grammar_lr1_not_slr.txt "id = id"
+
+============================================================
+5.1 Task 3.1: Conflict Analysis
+============================================================
+
+Grammar A (expression grammar, input/grammar.txt):
+Expr -> Expr + Term | Term
+Term -> Term * Factor | Factor
+Factor -> ( Expr ) | id
+
+Observed:
+- SLR(1): No conflicts found. Grammar is SLR(1).
+- LR(1): No conflicts found. Grammar is LR(1).
+- Both parsers accept: id + id * id
+
+Grammar B (LR(1)-but-not-SLR, input/grammar_lr1_not_slr.txt):
+Start -> Lhs = Rhs | Rhs
+Lhs -> * Rhs | id
+Rhs -> Lhs
+
+Observed:
+- SLR(1): Conflicts detected. Grammar is NOT SLR(1).
+  Conflict reported:
+  State I2, symbol '=': shift/reduce conflict (existing=r2, incoming=s8)
+- LR(1): No conflicts found. Grammar is LR(1).
+- Parsing input "id = id":
+  - SLR parser is skipped due to conflicts.
+  - LR(1) parser accepts successfully.
+
+How LR(1) resolves the SLR conflict:
+- SLR reductions are triggered by FOLLOW sets, which can over-approximate valid lookaheads.
+- LR(1) uses item-specific lookaheads [A -> alpha ., a], so reduce actions apply only for the exact lookahead terminal.
+- This extra precision removes the false shift/reduce ambiguity in Grammar B.
+
+============================================================
+5.2 Task 3.2: Performance Comparison
+============================================================
+
+Environment note:
+- Times are from one local run and may vary by machine/load.
+
+Grammar A metrics (input/grammar.txt):
+- State count:
+  - SLR(LR(0) DFA): 12
+  - LR(1): 22
+- Transitions:
+  - SLR: 22
+  - LR(1): 38
+- Parsing table entries:
+  - SLR ACTION=36, GOTO=9, estimated-bytes=2448
+  - LR(1) ACTION=56, GOTO=15, estimated-bytes=3856
+- Build times:
+  - SLR automaton=0.439625 ms, SLR table=0.168671 ms
+  - LR(1) automaton=3.41458 ms, LR(1) table=0.242557 ms
+- Parsing speed (2000 runs, input "id + id * id"):
+  - SLR: 107.152 ms total, 0.0535758 ms/run
+  - LR(1): 121.459 ms total, 0.0607297 ms/run
+
+Grammar B metrics (input/grammar_lr1_not_slr.txt):
+- State count:
+  - SLR(LR(0) DFA): 10
+  - LR(1): 14
+- Transitions:
+  - SLR: 14
+  - LR(1): 18
+- Parsing table entries:
+  - SLR ACTION=17, GOTO=7, estimated-bytes=1288
+  - LR(1) ACTION=22, GOTO=9, estimated-bytes=1664
+- Build times:
+  - SLR automaton=0.182247 ms, SLR table=0.167446 ms
+  - LR(1) automaton=0.452462 ms, LR(1) table=0.085671 ms
+- Parsing speed (2000 runs, input "id = id"):
+  - SLR: not measured (parser disabled due to conflicts)
+  - LR(1): 57.6794 ms total, 0.0288397 ms/run
+
+Performance conclusion:
+- LR(1) is generally larger (more states and table entries) and can take more time to construct.
+- SLR(1) is usually smaller/faster but may fail on grammars that LR(1) can parse.
+- LR(1) provides stronger coverage/precision at the cost of larger parser artifacts.
+
+============================================================
+5.3 Task 3.3: Parse Tree Generation
+============================================================
+
+Implemented behavior:
+- Parse trees are generated for accepted strings by both parsers.
+- Tree printing is text-based and indented for readability.
+- Reduction steps are shown directly in the parsing trace ("Reduce A -> ...").
+- Tree structure properties:
+  - Root: start-derived non-terminal (e.g., Expr, Start)
+  - Internal nodes: non-terminals introduced by reductions
+  - Leaves: shifted terminals (and epsilon leaf for epsilon productions)
+
+Example (from Grammar A, accepted input "id + id * id"):
+Expr
+  Expr
+    Term
+      Factor
+        id
+  +
+  Term
+    Term
+      Factor
+        id
+    *
+    Factor
+      id
+
+This confirms that reduction history and final parse tree are consistent with shift-reduce parsing steps.
+
